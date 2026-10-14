@@ -57,6 +57,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;margin-in
 .logo svg{width:22px;height:22px}
 .title-row .range{font-size:13px;color:var(--muted);font-weight:500}
 .title-row .meta{margin-left:auto;font-size:12px;color:var(--muted)}
+.tab-title{margin:-4px 0 0;font-size:16px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;width:max-content;max-width:100%;box-shadow:var(--shadow)}
 .tabs::-webkit-scrollbar{display:none}
 .tab{font-size:14px;font-weight:600;background:transparent;color:var(--muted);border:0;border-radius:999px;padding:8px 14px;cursor:pointer;white-space:nowrap;flex:none;display:inline-flex;align-items:center;gap:7px;transition:background .15s,color .15s}
@@ -78,7 +79,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;margin-in
 }
 
 /* Barra de filtros */
-.bar{position:sticky;top:calc(env(safe-area-inset-top,0px) + 118px);z-index:20;margin-top:16px}
+.bar{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--hdr,118px));z-index:20;margin-top:16px}
 .bar-inner{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:end;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 14px;box-shadow:var(--shadow)}
 @media (max-width:700px){.bar{position:static}.bar-inner{padding:10px 12px}}
 .field{display:grid;gap:4px;min-width:0}
@@ -275,7 +276,7 @@ button.pl:focus-visible{outline:2px solid var(--accent)}
 .btn.sm{padding:6px 12px;font-size:13px}
 .btn:disabled{opacity:.5;cursor:default}
 .chat{display:grid;grid-template-columns:260px minmax(0,1fr);gap:16px;padding-block:20px 0;align-items:start}
-.side{display:grid;gap:10px;position:sticky;top:130px}
+.side{display:grid;gap:10px;position:sticky;top:calc(var(--hdr,118px) + 12px)}
 .convs{list-style:none;margin:0;padding:0;display:grid;gap:2px;max-height:min(70vh,640px);overflow-y:auto}
 .conv{display:grid;grid-template-columns:1fr auto;align-items:center;border-radius:12px}
 .conv button.open{all:unset;cursor:pointer;padding:8px 10px;display:grid;gap:1px;min-width:0;border-radius:12px}
@@ -309,13 +310,14 @@ footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-si
 @media (max-width:520px){.kpi .v{font-size:28px}.panel{padding:14px}
   .games li{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}.games .d{grid-column:1/-1;margin-bottom:-4px}.tgames li{grid-template-columns:30px 22px minmax(0,1fr) 54px 22px}.tgames .d{grid-column:auto;margin:0}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-#pcardSec{scroll-margin-top:190px}
+#pcardSec{scroll-margin-top:calc(var(--hdr,118px) + 72px)}
 </style>
 
 
 <div class="wrap">
   <header class="top">
     <div class="title-row"><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--accent-ink)" stroke-width="1.8"/><path d="M12 7.5l3.2 2.3-1.2 3.8h-4l-1.2-3.8z" fill="var(--accent-ink)"/><path d="M12 3v4.5M15.2 9.8l4.3-1.4M14 13.6l2.6 3.6M10 13.6l-2.6 3.6M8.8 9.8L4.5 8.4" stroke="var(--accent-ink)" stroke-width="1.5"/></svg></span><h1>LaLiga en datos</h1><span class="range">1928/29 → 2026/27</span><span class="meta">Primera División · <span id="nSeasons">96</span> temporadas · <span id="nMatches">27.784</span> partidos</span></div>
+    <p class="tab-title" id="tabTitle"></p>
     <nav class="tabs" role="tablist" aria-label="Secciones">
       <button class="tab" role="tab" data-tab="temporada" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z M4 9h16 M9 5v14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="tl"><span class="lg">Temporada</span><span class="sh">Liga</span></span></button>
       <button class="tab" role="tab" data-tab="equipos" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="tl">Equipos</span></button>
@@ -1533,8 +1535,14 @@ function render(){
   $('btnY').setAttribute('aria-pressed',st.card==='Y');$('btnR').setAttribute('aria-pressed',st.card==='R');
   document.querySelectorAll('[data-race]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.race===st.race));
   try{RENDER[st.tab]();}catch(err){console.error(err);}
+  $('tabTitle').textContent=tabTitle();
   save();
 }
+function tabTitle(){const s=lab(st.season);return {temporada:'Temporada '+s,equipos:'Equipos · '+T[st.team],h2h:'Cara a cara · '+T[st.team]+' – '+T[st.teamB],jugadores:'Jugadores · '+s,historia:'Historia · '+lab(SKEYS[0])+' – '+lab(SKEYS[SKEYS.length-1]),disciplina:'Disciplina · '+s,chat:'Chat · Pregunta a los datos'}[st.tab]||'';}
+// La barra de filtros se pega justo debajo de la cabecera, que cambia de alto según la pantalla
+const hdr=document.querySelector('header.top');
+const setHdr=()=>document.documentElement.style.setProperty('--hdr',hdr.offsetHeight+'px');
+if(window.ResizeObserver)new ResizeObserver(setHdr).observe(hdr);else setHdr();
 addEventListener('resize',()=>{const nw=innerWidth<600?420:640;if(nw!==W){W=nw;render();}});
 $('updFoot').textContent=UPD;$('nSeasons').textContent=SKEYS.length;$('nMatches').textContent=fmt(allMatches().length);
 setTab(st.tab);
