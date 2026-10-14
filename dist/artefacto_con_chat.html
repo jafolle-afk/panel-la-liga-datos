@@ -1604,10 +1604,12 @@ tabBtns.forEach(b=>{b.setAttribute('aria-controls','v-'+b.dataset.tab);b.onclick
 document.querySelector('.tabs').addEventListener('keydown',e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;const vis=tabBtns.filter(b=>!b.hidden);const i=vis.indexOf(document.activeElement);if(i<0)return;const n=vis[(i+(e.key==='ArrowRight'?1:-1)+vis.length)%vis.length];n.focus();n.click();});
 function setTab(t){
   if(!TABS.includes(t)||(t==='chat'&&$('tabChat').hidden))t='temporada';
+  const changed=st.tab!==t;
   st.tab=t;tabBtns.forEach(b=>{const on=b.dataset.tab===t;b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1;});
   TABS.forEach(x=>{$('v-'+x).hidden=x!==t;});
   try{history.replaceState(null,'','#'+t);}catch(e){}
   render();
+  if(changed)scrollTo({top:0});
   if(t==='chat')$('askInput').focus({preventScroll:true});
 }
 function render(){
