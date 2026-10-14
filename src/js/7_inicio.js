@@ -49,10 +49,19 @@ function render(){
   $('btnY').setAttribute('aria-pressed',st.card==='Y');$('btnR').setAttribute('aria-pressed',st.card==='R');
   document.querySelectorAll('[data-race]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.race===st.race));
   try{RENDER[st.tab]();}catch(err){console.error(err);}
-  $('tabTitle').textContent=tabTitle();
+  $('tabTitle').innerHTML=tabTitle();
   save();
 }
-function tabTitle(){const s=lab(st.season);return {temporada:'Temporada '+s,equipos:'Equipos · '+T[st.team],h2h:'Cara a cara · '+T[st.team]+' – '+T[st.teamB],jugadores:'Jugadores · '+s,historia:'Historia · '+lab(SKEYS[0])+' – '+lab(SKEYS[SKEYS.length-1]),disciplina:'Disciplina · '+s,chat:'Chat · Pregunta a los datos'}[st.tab]||'';}
+function tabTitle(){
+  const s=lab(st.season),now=st.season===CURRENT?'<span class="ph-badge">En curso</span>':'';
+  const club=t=>`${crest(t,'md')}<span class="ph-name">${esc(T[t])}</span>`;
+  const H={temporada:['Temporada',s+now],equipos:['Equipos',club(st.team)],h2h:['Cara a cara',club(st.team)+'<span class="ph-vs">vs</span>'+club(st.teamB)],
+    jugadores:['Jugadores','Líderes de '+s+now],historia:['Historia',lab(SKEYS[0])+' – '+lab(SKEYS[SKEYS.length-1])],
+    disciplina:['Disciplina','Tarjetas de '+s+now],chat:['Chat','Pregunta a los datos']}[st.tab];
+  if(!H)return '';
+  const ico=document.querySelector(`.tab[data-tab="${st.tab}"] svg`);
+  return `<span class="ph-ico" aria-hidden="true">${ico?ico.outerHTML:''}</span><div class="ph-txt"><span class="ph-kicker">${H[0]}</span><h2 class="ph-title">${H[1]}</h2></div>`;
+}
 // La barra de filtros se pega justo debajo de la cabecera, que cambia de alto según la pantalla
 const hdr=document.querySelector('header.top');
 const setHdr=()=>document.documentElement.style.setProperty('--hdr',hdr.offsetHeight+'px');
