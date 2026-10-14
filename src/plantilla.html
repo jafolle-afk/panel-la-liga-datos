@@ -1,0 +1,587 @@
+<title>LaLiga en datos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: app de resultados — cabecera fija con pestañas en píldora (abajo en el móvil), filtros en una barra flotante y tarjetas suaves. Números en condensada tipo marcador. */
+:root{
+  --bg:#f3f5f4; --surface:#ffffff; --surface2:#f7f9f8; --ink:#101a16; --muted:#5b6762; --faint:#8b958f; --line:#e3e8e5; --grid:#edf1ee;
+  --accent:#0d7a55; --accent-ink:#ffffff; --accent-soft:#e3f3ec; --hl:#eef7f2;
+  --rec:#ec6a2e; --prov:#2f6fd6; --yellow:#f2c200; --red:#d7263d; --europe:#2f6fd6; --down:#d7263d; --gold:#d9a400;
+  --win:#1f9d5c; --draw:#a3aca7; --loss:#d7263d;
+  --c1:#2f6fd6; --c2:#ec6a2e; --c3:#1f9d5c; --c4:#8a4fd1; --c5:#d4a20b; --c6:#d1477a; --c7:#1f9fae; --c8:#6b7a3a;
+  --h1:#d9a400; --h2:#2f6fd6; --h3:#93b9ec; --h4:#dde3df; --h5:#eca495; --h6:#d7263d;
+  --shadow:0 1px 2px rgba(16,26,22,.05),0 2px 8px rgba(16,26,22,.06); --shadow-lg:0 8px 28px rgba(16,26,22,.12);
+  --r:16px; --r-sm:10px;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1210; --surface:#151d1a; --surface2:#1a2420; --ink:#e8eeeb; --muted:#9ea9a4; --faint:#75807b; --line:#25302c; --grid:#1e2925;
+  --accent:#35c48c; --accent-ink:#06130d; --accent-soft:#16352a; --hl:#183026;
+  --rec:#f07a46; --prov:#4a8dee; --yellow:#e8b900; --red:#e05062; --europe:#4a8dee; --down:#e05062; --gold:#e8b900;
+  --win:#3fb46f; --draw:#5d6872; --loss:#e05062;
+  --c1:#4a8dee; --c2:#f07a46; --c3:#3fb46f; --c4:#a476e6; --c5:#e8b900; --c6:#e66a98; --c7:#35b8c7; --c8:#9aab5a;
+  --h1:#e8b900; --h2:#3a7fe0; --h3:#2b4f78; --h4:#26312d; --h5:#7a3b33; --h6:#e05062;
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 2px 10px rgba(0,0,0,.25); --shadow-lg:0 10px 30px rgba(0,0,0,.45); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1210; --surface:#151d1a; --surface2:#1a2420; --ink:#e8eeeb; --muted:#9ea9a4; --faint:#75807b; --line:#25302c; --grid:#1e2925;
+  --accent:#35c48c; --accent-ink:#06130d; --accent-soft:#16352a; --hl:#183026;
+  --rec:#f07a46; --prov:#4a8dee; --yellow:#e8b900; --red:#e05062; --europe:#4a8dee; --down:#e05062; --gold:#e8b900;
+  --win:#3fb46f; --draw:#5d6872; --loss:#e05062;
+  --c1:#4a8dee; --c2:#f07a46; --c3:#3fb46f; --c4:#a476e6; --c5:#e8b900; --c6:#e66a98; --c7:#35b8c7; --c8:#9aab5a;
+  --h1:#e8b900; --h2:#3a7fe0; --h3:#2b4f78; --h4:#26312d; --h5:#7a3b33; --h6:#e05062;
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 2px 10px rgba(0,0,0,.25); --shadow-lg:0 10px 30px rgba(0,0,0,.45); color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1200px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 72px}
+h1,h2,h3{font-family:var(--f-body);font-weight:800;letter-spacing:-.01em;text-wrap:balance;margin:0;line-height:1.1}
+h1{font-size:clamp(26px,4vw,34px)}
+h2{font-size:clamp(22px,3vw,28px)}
+h3{font-size:16px;font-weight:700;letter-spacing:0}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+p{margin:0}
+.lede{color:var(--muted);max-width:68ch}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Cabecera y pestañas */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:14px max(16px,env(safe-area-inset-left,0px)) 10px;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid var(--line);display:grid;gap:10px}
+.title-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
+.logo{width:34px;height:34px;border-radius:10px;background:var(--accent);display:grid;place-items:center;flex:none}
+.logo svg{width:22px;height:22px}
+.title-row .range{font-size:13px;color:var(--muted);font-weight:500}
+.title-row .meta{margin-left:auto;font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;width:max-content;max-width:100%;box-shadow:var(--shadow)}
+.tabs::-webkit-scrollbar{display:none}
+.tab{font-size:14px;font-weight:600;background:transparent;color:var(--muted);border:0;border-radius:999px;padding:8px 14px;cursor:pointer;white-space:nowrap;flex:none;display:inline-flex;align-items:center;gap:7px;transition:background .15s,color .15s}
+.tab svg{width:17px;height:17px;flex:none}
+.tab .sh{display:none}
+.tab:hover{color:var(--ink);background:var(--surface2)}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tab:focus-visible{outline-offset:-2px}
+@media (max-width:700px){
+  header.top{position:static;backdrop-filter:none;background:transparent;border:0;padding-bottom:0}
+  .title-row .meta{display:none}
+  .tabs{position:fixed;z-index:40;left:0;right:0;bottom:0;width:auto;border-radius:0;border:0;border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-left,0px)) calc(6px + env(safe-area-inset-bottom,0px));justify-content:space-between;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 -4px 18px rgba(0,0,0,.08)}
+  .tab{flex:1 1 0;flex-direction:column;gap:2px;font-size:9.5px;letter-spacing:-.01em;padding:6px 0;border-radius:12px;min-width:0}
+  .tab svg{width:22px;height:22px}
+  .tab[aria-selected="true"]{background:var(--accent-soft);color:var(--accent)}
+  .tab .tl{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+  .tab .lg{display:none}.tab .sh{display:inline}
+  .wrap{padding-bottom:110px}
+}
+
+/* Barra de filtros */
+.bar{position:sticky;top:calc(env(safe-area-inset-top,0px) + 118px);z-index:20;margin-top:16px}
+.bar-inner{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:end;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 14px;box-shadow:var(--shadow)}
+@media (max-width:700px){.bar{position:static}.bar-inner{padding:10px 12px}}
+.field{display:grid;gap:4px;min-width:0}
+.field label,.field .lab{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+select,input[type=search]{font:inherit;font-weight:600;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:8px 14px;min-width:0;max-width:100%}
+select{padding-right:34px}
+input[type=search]{width:min(320px,100%);font-size:16px;font-weight:500}
+.seg{display:inline-flex;border-radius:999px;background:var(--surface2);border:1px solid var(--line);padding:3px;flex-wrap:wrap;gap:2px}
+.seg button{font-size:13px;font-weight:600;border:0;border-radius:999px;background:transparent;color:var(--muted);padding:6px 12px;cursor:pointer;display:inline-flex;gap:7px;align-items:center}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.card-ico{display:inline-block;width:9px;height:13px;border-radius:2px;vertical-align:-2px}
+.card-ico.y{background:var(--yellow)} .card-ico.r{background:var(--red)}
+.vs{font-family:var(--f-display);font-weight:700;font-size:20px;color:var(--muted);padding-bottom:6px}
+
+/* Escudo de colores del club (no es el escudo oficial: solo sus colores) */
+.crest{display:inline-block;flex:none;width:18px;height:18px;border-radius:50%;background:#999;box-shadow:0 0 0 1px color-mix(in srgb,var(--ink) 22%,transparent) inset;vertical-align:-4px;margin-right:7px}
+.crest.lg{width:40px;height:40px;margin:0}
+.crest.md{width:26px;height:26px;margin:0}
+.tname{display:inline-flex;align-items:center;min-width:0}
+
+/* Secciones y tarjetas */
+.view{animation:viewIn .22s ease-out}
+@keyframes viewIn{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:none}}
+section{padding-block:28px 4px;display:grid;gap:16px}
+.sec-head{display:grid;gap:4px}
+.sec-head .tag{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr))}
+.g21{grid-template-columns:minmax(0,3fr) minmax(0,2fr)}@media (max-width:960px){.g21{grid-template-columns:1fr}}
+.g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:grid;gap:12px;min-width:0;align-content:start;box-shadow:var(--shadow)}
+.panel-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 14px;align-items:baseline}
+.note{font-size:13px;color:var(--muted)}
+.callout{font-size:14px;color:var(--ink);background:var(--accent-soft);border-radius:var(--r-sm);padding:10px 14px}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;display:grid;gap:2px;align-content:start;min-width:0}
+.kpi .k{font-size:12px;font-weight:600;color:var(--muted)}
+.kpi .v{font-family:var(--f-display);font-weight:700;font-size:34px;line-height:1.05;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:13px;color:var(--muted)}
+
+/* Hero de la temporada */
+.hero{display:grid;grid-template-columns:minmax(0,1.35fr) repeat(3,minmax(0,1fr));gap:12px}
+.hero>div{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:16px 18px;display:grid;gap:4px;align-content:start;min-width:0}
+.hero .big{font-family:var(--f-display);font-weight:700;font-size:clamp(30px,3vw,44px);line-height:.95;text-transform:uppercase}
+.hero .mid{font-weight:800;font-size:18px;line-height:1.15}
+.hero .sub{font-size:13px;color:var(--muted)}
+.hero .champ-cell{grid-row:span 2;align-content:center;background:linear-gradient(160deg,color-mix(in srgb,var(--gold) 16%,var(--surface)),var(--surface) 60%);border-color:color-mix(in srgb,var(--gold) 45%,var(--line))}
+.hero .champ-top{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}
+.hero .champ-top .linkbig{min-width:0}
+.hero .rel{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 22px;align-items:center}
+.hero .rel .eyebrow{flex:none}
+.hero .rel b{font-weight:700}
+.linkbig{all:unset;cursor:pointer;justify-self:start}.linkbig:hover .big{color:var(--accent)}.linkbig:focus-visible{outline:2px solid var(--accent)}
+@media (max-width:900px){.hero{grid-template-columns:repeat(2,minmax(0,1fr))}.hero .champ-cell{grid-column:1/-1;grid-row:auto}}
+@media (max-width:520px){.hero{grid-template-columns:1fr}}
+
+.story{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:12px}
+.story li{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;display:grid;gap:4px}
+.story .k{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent)}
+.story .t{font-size:15px}
+.story b{font-weight:700}
+
+/* Tablas */
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:14px}
+th,td{padding:8px 9px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--grid)}
+th{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);vertical-align:bottom;background:var(--surface);position:sticky;top:0;z-index:1}
+th button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+th button:hover{color:var(--ink)}
+th button[data-sorted]{color:var(--accent)}
+th button[data-sorted]::after{content:attr(data-sorted)}
+td{font-variant-numeric:tabular-nums}
+th.l,td.l{text-align:left}
+th.c,td.c{text-align:center}
+td.team{font-weight:600}
+tbody tr[data-t]{cursor:pointer}
+tbody tr:hover td{background:var(--surface2)}
+tr.sel td{background:var(--hl);font-weight:700}
+td.pos{position:relative;padding-left:14px;color:var(--muted);font-weight:600}
+td.pos::before{content:"";position:absolute;left:2px;top:7px;bottom:7px;width:4px;border-radius:4px;background:transparent}
+tr.z-ch td.pos::before{background:var(--gold)}
+tr.z-eu td.pos::before{background:var(--europe)}
+tr.z-dn td.pos::before{background:var(--down)}
+td.pts{font-family:var(--f-display);font-weight:700;font-size:18px}
+td.na{color:var(--faint)}
+.form{display:inline-flex;gap:3px;vertical-align:middle}
+.form i{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:5px;font-style:normal;font-size:10px;font-weight:700;color:#fff}
+.form i.W{background:var(--win)} .form i.D{background:var(--draw)} .form i.L{background:var(--loss)}
+.spark{display:inline-block;width:84px;height:20px;vertical-align:middle}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted);align-items:center}
+.sw{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;margin-right:6px}
+.stripe{display:inline-block;width:4px;height:13px;border-radius:3px;vertical-align:-2px;margin-right:6px}
+
+/* Gráficos */
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-family:var(--f-body);font-size:11px;fill:var(--muted)}
+svg .lbl{fill:var(--ink);font-weight:600}
+svg .name{font-family:var(--f-body);font-size:12px;fill:var(--ink)}
+svg .name.sel{font-weight:700}
+.gridl{stroke:var(--grid);stroke-width:1}
+.axis{stroke:var(--line);stroke-width:1}
+.hit{fill:transparent}
+.hit:hover{fill:var(--ink);fill-opacity:.04}
+#tip{position:fixed;z-index:50;pointer-events:none;background:var(--ink);color:var(--bg);font-size:13px;line-height:1.4;padding:9px 11px;border-radius:10px;max-width:280px;opacity:0;transition:opacity .08s;box-shadow:var(--shadow-lg)}
+#tip .num{font-variant-numeric:tabular-nums;font-weight:600}
+
+/* Listas */
+.rank{list-style:none;margin:0;padding:0;display:grid}
+.rank li{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--grid);font-size:14px}
+.rank li:last-child{border-bottom:0}
+.rank li .i{color:var(--faint);font-size:12px;font-weight:600}
+.rank li .v{font-weight:700;font-variant-numeric:tabular-nums}
+.rank li .t{min-width:0}
+.rank li .t small{color:var(--muted);font-size:12px;margin-left:6px}
+.plist .rank li .t small,.rank.blk li .t small{display:block;margin-left:0}
+.rank li.me{background:var(--hl);border-radius:8px;margin-inline:-6px;padding-inline:6px}
+.rank li.me .t{font-weight:700;color:var(--accent)}
+button.pl{all:unset;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;display:inline-flex;align-items:center}
+button.pl:hover{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+button.pl:focus-visible{outline:2px solid var(--accent)}
+
+.palm{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.palm.wide{grid-template-columns:repeat(auto-fill,minmax(158px,1fr))}
+.palm div{border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:grid;gap:1px;background:var(--surface2);min-width:0}
+.palm .y{font-size:11px;font-weight:600;color:var(--muted)}
+.palm .c{font-weight:800;font-size:14px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center}
+.palm .d{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.palm div.me{border-color:var(--accent);background:var(--hl)}
+
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:14px}
+.mini{display:grid;gap:2px}
+.mini .k{font-size:12px;font-weight:600;color:var(--muted)}
+.mini .v{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* Cuadro de resultados */
+.xt{font-size:12px;width:100%;margin:0;border-collapse:collapse}
+.xt th,.xt td{padding:0;border:2px solid var(--surface);text-align:center;min-width:31px;height:26px;position:static}
+.xt th{font-size:10px;letter-spacing:0;padding:2px 3px}
+.xt th.rh{text-align:left;padding:0 8px 0 2px;font-size:12px;text-transform:none;color:var(--ink);font-weight:600;white-space:nowrap;position:sticky;left:0;background:var(--surface);z-index:1}
+.xt td{font-size:11px;font-weight:600;cursor:default;border-radius:6px}
+.xt td.W{background:color-mix(in srgb,var(--win) 28%,var(--surface))}
+.xt td.D{background:color-mix(in srgb,var(--draw) 28%,var(--surface))}
+.xt td.L{background:color-mix(in srgb,var(--loss) 24%,var(--surface))}
+.xt td.self{background:var(--grid)}
+.xt tr.sel th.rh{color:var(--accent)}
+.xt tbody tr:hover td{filter:brightness(.97)}
+
+/* Cara a cara */
+.h2h-bar{display:flex;height:46px;border-radius:999px;overflow:hidden;font-family:var(--f-display);font-weight:700;font-size:21px;color:#fff;gap:3px}
+.h2h-bar div{display:grid;place-items:center;min-width:0;white-space:nowrap;overflow:hidden}
+.h2h-names{display:flex;justify-content:space-between;gap:12px;font-family:var(--f-display);font-weight:700;font-size:clamp(26px,4vw,38px);text-transform:uppercase;line-height:1}
+.h2h-names span{display:inline-flex;align-items:center;gap:10px}
+.h2h-names span:last-child{text-align:right;flex-direction:row-reverse}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:13px;font-weight:600;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 13px;cursor:pointer;text-align:left;box-shadow:var(--shadow)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip:disabled{opacity:.5;cursor:default}
+.cmp td:first-child,.cmp th:first-child{text-align:right}
+.cmp td:nth-child(2){text-align:center;color:var(--muted);font-size:13px}
+.cmp td:last-child,.cmp th:last-child{text-align:left}
+.cmp td.better{color:var(--accent);font-weight:800}
+.games{list-style:none;margin:0;padding:0;display:grid}
+.games li{display:grid;grid-template-columns:88px minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--grid);font-size:14px}
+.games li:last-child{border-bottom:0}
+.games .d{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.games .h{text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.games .a{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.games .s{font-family:var(--f-display);font-weight:700;font-size:16px;padding:1px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--line);text-align:center;min-width:56px}
+.games .win{font-weight:700}
+.res{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;font-size:11px;font-weight:700;color:#fff}
+.res.W{background:var(--win)}.res.D{background:var(--draw)}.res.L{background:var(--loss)}
+.tgames li{grid-template-columns:34px 22px minmax(0,1fr) 60px 24px}
+
+/* Récords */
+.recs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
+.rec-top{display:grid;gap:2px}
+.rec-top .v{font-family:var(--f-display);font-weight:700;font-size:42px;line-height:1;color:var(--accent)}
+.rec-top .w{font-weight:700}
+.rec-top .w small{font-size:12px;color:var(--muted);font-weight:500;margin-left:6px}
+
+/* Ficha de jugador */
+.pcard{display:grid;gap:14px}
+.pname{font-family:var(--f-display);font-weight:700;font-size:clamp(32px,5vw,46px);text-transform:uppercase;line-height:1}
+.empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:var(--r)}
+.badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;border-radius:999px;padding:3px 9px;background:var(--accent-soft);color:var(--accent);margin-right:6px}
+.badge.gold{background:color-mix(in srgb,var(--gold) 22%,var(--surface));color:var(--ink)}
+
+/* Chat */
+.btn{font-weight:700;border-radius:999px;padding:10px 18px;cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line);font-weight:600}
+.btn.sm{padding:6px 12px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+.chat{display:grid;grid-template-columns:260px minmax(0,1fr);gap:16px;padding-block:20px 0;align-items:start}
+.side{display:grid;gap:10px;position:sticky;top:130px}
+.convs{list-style:none;margin:0;padding:0;display:grid;gap:2px;max-height:min(70vh,640px);overflow-y:auto}
+.conv{display:grid;grid-template-columns:1fr auto;align-items:center;border-radius:12px}
+.conv button.open{all:unset;cursor:pointer;padding:8px 10px;display:grid;gap:1px;min-width:0;border-radius:12px}
+.conv button.open:focus-visible{outline:2px solid var(--accent)}
+.conv .ct{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conv .cd{font-size:11px;color:var(--faint)}
+.conv:hover{background:var(--surface)}
+.conv.on{background:var(--surface);box-shadow:var(--shadow)}
+.conv .del{font-size:12px;background:transparent;border:0;color:var(--faint);cursor:pointer;padding:6px 8px;border-radius:8px;white-space:nowrap}
+.conv .del:hover{color:var(--down)}
+.conv .del.arm{color:var(--down);font-weight:700}
+.main{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);display:grid;grid-template-rows:auto 1fr auto;min-height:min(78vh,760px);min-width:0}
+.main-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.thread{padding:18px;display:grid;gap:18px;align-content:start;overflow-y:auto;max-height:min(62vh,600px)}
+.welcome{display:grid;gap:14px;max-width:64ch}
+.welcome .chip{background:var(--surface2);box-shadow:none}
+.msg{display:grid;gap:6px;min-width:0}
+.msg .who{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.msg.q{justify-self:end;max-width:80%;background:var(--accent-soft);border-radius:16px 16px 4px 16px;padding:10px 14px}
+.msg.q .body{font-weight:500}
+.msg.a .body{max-width:80ch}
+.msg .body p+p,.msg .body p+ul,.msg .body ul+p,.msg .body div+p{margin-top:8px}
+.msg .body ul{margin:6px 0;padding-left:20px}
+.msg .body table{font-size:13px;margin:8px 0;width:auto}
+.msg .status{font-size:13px;color:var(--muted);font-style:italic}
+.composer{border-top:1px solid var(--line);padding:12px;display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
+.composer textarea{flex:1 1 300px;min-width:0;font:inherit;font-size:16px;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:11px 13px;resize:vertical;min-height:50px;line-height:1.4}
+@media (max-width:760px){.chat{grid-template-columns:1fr}.side{position:static}.convs{max-height:200px}.msg.q{max-width:92%}}
+
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);display:grid;gap:6px;max-width:80ch}
+@media (max-width:520px){.kpi .v{font-size:28px}.panel{padding:14px}
+  .games li{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}.games .d{grid-column:1/-1;margin-bottom:-4px}.tgames li{grid-template-columns:30px 22px minmax(0,1fr) 54px 22px}.tgames .d{grid-column:auto;margin:0}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+#pcardSec{scroll-margin-top:190px}
+</style>
+
+
+<div class="wrap">
+  <header class="top">
+    <div class="title-row"><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--accent-ink)" stroke-width="1.8"/><path d="M12 7.5l3.2 2.3-1.2 3.8h-4l-1.2-3.8z" fill="var(--accent-ink)"/><path d="M12 3v4.5M15.2 9.8l4.3-1.4M14 13.6l2.6 3.6M10 13.6l-2.6 3.6M8.8 9.8L4.5 8.4" stroke="var(--accent-ink)" stroke-width="1.5"/></svg></span><h1>LaLiga en datos</h1><span class="range">1928/29 → 2026/27</span><span class="meta">Primera División · <span id="nSeasons">96</span> temporadas · <span id="nMatches">27.784</span> partidos</span></div>
+    <nav class="tabs" role="tablist" aria-label="Secciones">
+      <button class="tab" role="tab" data-tab="temporada" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z M4 9h16 M9 5v14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="tl"><span class="lg">Temporada</span><span class="sh">Liga</span></span></button>
+      <button class="tab" role="tab" data-tab="equipos" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="tl">Equipos</span></button>
+      <button class="tab" role="tab" data-tab="h2h" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h11l-3-3 M17 17H6l3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tl"><span class="lg">Cara a cara</span><span class="sh">Duelos</span></span></button>
+      <button class="tab" role="tab" data-tab="jugadores" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="tl">Jugadores</span></button>
+      <button class="tab" role="tab" data-tab="historia" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="tl">Historia</span></button>
+      <button class="tab" role="tab" data-tab="disciplina" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="9" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8" transform="rotate(-8 10 10)"/><rect x="10" y="7" width="9" height="13" rx="1.5" fill="currentColor" opacity=".35" transform="rotate(8 14 13)"/></svg><span class="tl">Disciplina</span></button>
+      <button class="tab" role="tab" data-tab="chat" type="button" id="tabChat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="tl">Chat</span></button>
+    </nav>
+  </header>
+
+  <div class="bar" id="bar">
+    <div class="bar-inner">
+      <div class="field" data-f="season"><label for="selSeason">Temporada</label><select id="selSeason"></select></div>
+      <div class="field" data-f="team"><label for="selTeam" id="lblTeam">Equipo</label><select id="selTeam"></select></div>
+      <div class="field" data-f="vs"><span class="vs" aria-hidden="true">vs</span></div>
+      <div class="field" data-f="teamB"><label for="selTeamB">Rival</label><select id="selTeamB"></select></div>
+      <div class="field" data-f="race"><span class="lab" id="raceLbl">Mostrar</span>
+        <div class="seg" role="group" aria-labelledby="raceLbl">
+          <button type="button" data-race="top" aria-pressed="true">Título</button>
+          <button type="button" data-race="eu" aria-pressed="false">Europa</button>
+          <button type="button" data-race="dn" aria-pressed="false">Descenso</button>
+        </div>
+      </div>
+      <div class="field" data-f="card"><span class="lab" id="cardLbl">Tarjetas</span>
+        <div class="seg" role="group" aria-labelledby="cardLbl">
+          <button type="button" id="btnY" aria-pressed="false"><span class="card-ico y"></span>Amarillas</button>
+          <button type="button" id="btnR" aria-pressed="true"><span class="card-ico r"></span>Rojas</button>
+        </div>
+      </div>
+      <div class="field" data-f="search"><label for="plSearch">Buscar jugador</label><input type="search" id="plSearch" list="plNames" placeholder="Messi, Zarra, Hugo Sánchez…" autocomplete="off"><datalist id="plNames"></datalist></div>
+    </div>
+  </div>
+
+  <!-- ============ TEMPORADA ============ -->
+  <div class="view" id="v-temporada" role="tabpanel">
+    <section>
+      <div class="sec-head"><span class="tag" id="sTag">La temporada</span><h2 id="sTitle">Temporada</h2></div>
+      <div class="hero" id="sHero"></div>
+      <p class="callout" id="sNote" hidden></p>
+    </section>
+    <section>
+      <div class="sec-head"><span class="tag">Claves</span><h2>Lo que dejó la temporada</h2></div>
+      <ul class="story" id="sStory"></ul>
+    </section>
+    <section>
+      <div class="sec-head"><span class="tag">Jornada a jornada</span><h2 id="raceTitle">La carrera por el título</h2>
+        <p class="lede" id="raceLede">Puntos acumulados de cada equipo tras cada partido. Pasa el ratón por el gráfico para ver la clasificación de cualquier jornada; cambia entre título, Europa y descenso en la barra de arriba.</p></div>
+      <div class="panel"><div id="raceChart"></div></div>
+    </section>
+    <section>
+      <div class="sec-head"><span class="tag">Clasificación</span><h2>La tabla</h2></div>
+      <div class="panel">
+        <div class="panel-head"><div class="legend"><span><span class="stripe" style="background:var(--gold)"></span>Campeón</span><span><span class="stripe" style="background:var(--europe)"></span>Puestos 2–4</span><span><span class="stripe" style="background:var(--down)"></span>Últimos tres</span></div><span class="note">Pulsa una columna para ordenar · pulsa un equipo para ver su ficha</span></div>
+        <div class="tscroll"><table id="tblSeason"></table></div>
+        <p class="note" id="tblNote"></p>
+      </div>
+      <div class="grid g3" id="sSplits"></div>
+    </section>
+    <section>
+      <div class="sec-head"><span class="tag">Todos los partidos</span><h2>Cuadro de resultados</h2>
+        <p class="lede">Cada fila es el equipo local y cada columna el visitante, ordenados por la clasificación final. Verde: gana el local; gris: empate; rojo: gana el visitante.</p></div>
+      <div class="panel"><div class="tscroll" id="xtWrap"></div></div>
+    </section>
+  </div>
+
+  <!-- ============ EQUIPOS ============ -->
+  <div class="view" id="v-equipos" role="tabpanel" hidden>
+    <section>
+      <div class="sec-head"><span class="tag">Ficha del club</span><h2 id="tTitle">Equipo</h2><p class="lede" id="tLede"></p></div>
+      <div class="kpis" id="tKpis"></div>
+      <ul class="story" id="tFacts"></ul>
+      <div class="panel">
+        <div class="panel-head"><h3>Trayectoria en Primera</h3><span class="note">puesto final de cada temporada · huecos = fuera de Primera</span></div>
+        <div id="tPos"></div>
+      </div>
+    </section>
+    <section>
+      <div class="sec-head"><span class="tag">Récords del club</span><h2>Lo mejor y lo peor</h2></div>
+      <div class="recs" id="tRecs"></div>
+    </section>
+    <section>
+      <div class="sec-head"><span class="tag" id="tSeasonTag">Temporada</span><h2 id="tSeasonTitle">La temporada</h2></div>
+      <div class="grid g2">
+        <div class="panel"><div class="panel-head"><h3>Posición jornada a jornada</h3><span class="note" id="tRoundNote"></span></div><div id="tRound"></div></div>
+        <div class="panel"><div class="panel-head"><h3>Detalle</h3></div><div class="split" id="tDetail"></div></div>
+      </div>
+      <div class="grid g2">
+        <div class="panel"><div class="panel-head"><h3>Partidos</h3><span class="note" id="tGamesNote"></span></div><ul class="games tgames" id="tGames" style="max-height:560px;overflow-y:auto;padding-right:6px"></ul></div>
+        <div class="panel"><div class="panel-head"><h3>Jugadores destacados</h3><span class="note">del equipo en esta temporada</span></div><div id="tPlayers"></div></div>
+      </div>
+    </section>
+    <section>
+      <div class="sec-head"><span class="tag">Rivales</span><h2>Contra quién le va mejor y peor</h2>
+        <p class="lede">Balance histórico contra los rivales con los que más se ha enfrentado. Pulsa uno para abrir el cara a cara.</p></div>
+      <div class="grid g2">
+        <div class="panel"><div class="tscroll"><table id="tRivals"></table></div></div>
+        <div class="grid" style="align-content:start">
+          <div class="panel"><div class="panel-head"><h3>Víctimas favoritas</h3><span class="note">más victorias, mín. 20 partidos</span></div><ol class="rank" id="tFav"></ol></div>
+          <div class="panel"><div class="panel-head"><h3>Bestias negras</h3><span class="note">peor % de victorias, mín. 20 partidos</span></div><ol class="rank" id="tBad"></ol></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ CARA A CARA ============ -->
+  <div class="view" id="v-h2h" role="tabpanel" hidden>
+    <section>
+      <div class="sec-head"><span class="tag">Cara a cara</span><h2>Historial de enfrentamientos en Liga</h2></div>
+      <div class="chips" id="derbis"></div>
+      <div class="panel" id="hSummary"></div>
+    </section>
+    <section>
+      <div class="grid g2">
+        <div class="panel"><div class="panel-head"><h3>Por décadas</h3><span class="note">victorias de cada uno y empates</span></div><div id="hDecades"></div></div>
+        <div class="panel"><div class="panel-head"><h3>Los dos, frente a frente</h3><span class="note">historia completa en Primera</span></div><div class="tscroll"><table class="cmp" id="hCmp"></table></div></div>
+      </div>
+      <div class="panel"><div class="panel-head"><h3>Trayectorias</h3><span class="note">puesto final de cada uno por temporada</span></div><div class="chips" id="hDecs"></div><div id="hPos"></div></div>
+      <div class="grid g3">
+        <div class="panel"><div class="panel-head"><h3>Últimos partidos</h3></div><ul class="games" id="hLast"></ul></div>
+        <div class="panel"><div class="panel-head"><h3 id="hBigA">Mayores victorias</h3></div><ul class="games" id="hBigAList"></ul></div>
+        <div class="panel"><div class="panel-head"><h3 id="hBigB">Mayores victorias</h3></div><ul class="games" id="hBigBList"></ul></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ JUGADORES ============ -->
+  <div class="view" id="v-jugadores" role="tabpanel" hidden>
+    <section id="pcardSec" hidden>
+      <div class="sec-head"><span class="tag">Ficha del jugador</span></div>
+      <div class="pcard" id="pcard"></div>
+    </section>
+    <section>
+      <div class="sec-head"><span class="tag">Líderes</span><h2 id="plTitle">Jugadores</h2>
+        <p class="lede" id="plLede">Los mejores de la temporada elegida. Los jugadores del equipo seleccionado aparecen resaltados; pulsa un nombre para ver su ficha.</p></div>
+      <div class="grid g3 plist" id="plGrid"></div>
+    </section>
+    <section>
+      <div class="sec-head"><span class="tag">Palmarés</span><h2>Máximos goleadores y Zamoras</h2>
+        <p class="lede">El máximo goleador y el portero menos goleado de cada temporada desde 1928/29, y quién lo ha sido más veces.</p></div>
+      <div class="grid g2">
+        <div class="panel"><div class="panel-head"><h3>Máximo goleador de cada temporada</h3><span class="note">de la más reciente a la primera</span></div><div class="palm wide" id="pichiGrid" style="max-height:440px;overflow-y:auto"></div></div>
+        <div class="panel"><div class="panel-head"><h3>Más veces máximo goleador</h3></div><ol class="rank" id="pichiRank"></ol></div>
+        <div class="panel"><div class="panel-head"><h3>Zamora de cada temporada</h3><span class="note">menos goles encajados por partido</span></div><div class="palm wide" id="zamGrid" style="max-height:440px;overflow-y:auto"></div></div>
+        <div class="panel"><div class="panel-head"><h3>Más Zamoras</h3></div><ol class="rank" id="zamRank"></ol></div>
+      </div>
+    </section>
+    <section>
+      <div class="sec-head"><span class="tag">Carreras</span><h2>Acumulado 1988/89 – 2026/27</h2><p class="note">Todas las temporadas de cada jugador en Primera desde 1988/89 (FBref)</p></div>
+      <div class="grid g3 plist" id="carGrid"></div>
+    </section>
+  </div>
+
+  <!-- ============ HISTORIA ============ -->
+  <div class="view" id="v-historia" role="tabpanel" hidden>
+    <section>
+      <div class="sec-head"><span class="tag">Desde 1928</span><h2>Casi un siglo de Liga</h2></div>
+      <div class="kpis" id="hiKpis"></div>
+      <div class="grid g2">
+        <div class="panel"><div class="panel-head"><h3>Ligas por club</h3><span class="note">1928/29–2025/26</span></div><div id="chartTitles"></div></div>
+        <div class="panel"><div class="panel-head"><h3>Campeones</h3><span class="note">de la más reciente a la primera</span></div><div class="palm" id="palm" style="max-height:440px;overflow-y:auto"></div></div>
+      </div>
+    </section>
+    <section>
+      <div class="sec-head"><span class="tag">Épocas</span><h2>Mapa de la Liga</h2>
+        <p class="lede">Cada fila es un club y cada columna una temporada; el color indica dónde terminó. Se ven de un vistazo las épocas doradas, las crisis y los años en Segunda (huecos). Clubes con 20 o más temporadas en Primera.</p></div>
+      <div class="panel">
+        <div class="legend"><span><span class="sw" style="background:var(--h1)"></span>Campeón</span><span><span class="sw" style="background:var(--h2)"></span>2º–4º</span><span><span class="sw" style="background:var(--h3)"></span>5º–8º</span><span><span class="sw" style="background:var(--h4)"></span>Media tabla</span><span><span class="sw" style="background:var(--h5)"></span>Cerca del descenso</span><span><span class="sw" style="background:var(--h6)"></span>Últimos tres</span></div>
+        <div class="tscroll"><div id="heat" style="min-width:760px"></div></div>
+      </div>
+    </section>
+    <section>
+      <div class="sec-head"><span class="tag">Récords</span><h2>Los récords de la Liga</h2>
+        <p class="lede">Temporadas completas de 1928/29 a 2025/26. Para comparar épocas, los puntos se recalculan a 3 por victoria y se dan por partido cuando las ligas tenían distinto número de jornadas.</p></div>
+      <div class="recs" id="recs"></div>
+    </section>
+    <section>
+      <div class="sec-head"><span class="tag">Tendencias</span><h2>Cómo ha cambiado el juego</h2></div>
+      <div class="grid g4" id="trendGrid"></div>
+    </section>
+    <section>
+      <div class="sec-head"><span class="tag">Clasificación histórica</span><h2>Todos los clubes</h2></div>
+      <div class="grid g21">
+        <div class="panel">
+          <div class="panel-head"><h3>Clasificación acumulada</h3><span class="note">Pts con 3 por victoria en todas las épocas</span></div>
+          <div class="tscroll" style="max-height:560px;overflow-y:auto"><table id="tblAll"></table></div>
+        </div>
+        <div class="panel"><div class="panel-head"><h3>Las 50 mayores goleadas</h3><span class="note">por diferencia de goles</span></div><ul class="games" id="bigWins" style="max-height:560px;overflow-y:auto;padding-right:6px"></ul></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ DISCIPLINA ============ -->
+  <div class="view" id="v-disciplina" role="tabpanel" hidden>
+    <section>
+      <div class="sec-head"><span class="tag">Disciplina</span><h2 id="dTitle">Tarjetas</h2>
+        <p class="lede">Tarjetas que vio cada equipo (recibidas) y las que vieron sus rivales jugando contra él (provocadas). Rojas por equipo desde 1928/29, amarillas desde 1971/72; provocadas, faltas y tiros desde 2005/06.</p></div>
+      <div class="kpis" id="dKpis"></div>
+      <div class="grid g2">
+        <div class="panel">
+          <div class="panel-head"><h3 id="divTitle">Rojas por equipo</h3>
+            <div class="legend"><span><span class="sw" style="background:var(--rec)"></span>Recibidas</span><span><span class="sw" style="background:var(--prov)"></span>Provocadas</span></div></div>
+          <div id="chartDiv"></div>
+        </div>
+        <div class="grid" style="gap:20px;align-content:start">
+          <div class="panel"><div class="panel-head"><h3 id="recProvTitle">Más rojas provocadas</h3><span class="note" id="recProvNote">en la temporada</span></div><ol class="rank" id="recProv"></ol></div>
+          <div class="panel"><div class="panel-head"><h3 id="recRecTitle">Más rojas recibidas</h3><span class="note">en la temporada</span></div><ol class="rank" id="recRec"></ol></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3 id="dTblTitle">Faltas y tarjetas por equipo</h3><span class="note">pulsa una columna para ordenar</span></div>
+        <div class="tscroll"><table id="tblDisc"></table></div>
+        <p class="note" id="dTblNote"></p>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3 id="teamCardsTitle">Rojas por temporada</h3>
+          <div class="legend"><span><span class="sw" style="background:var(--rec)"></span>Recibidas</span><span><span class="sw" style="background:var(--prov)"></span>Provocadas</span></div></div>
+        <div id="chartTeamCards"></div>
+      </div>
+    </section>
+    <section>
+      <div class="sec-head"><span class="tag">Jugadores</span><h2 id="dPlTitle">Amonestados y expulsados</h2></div>
+      <div class="grid g3 plist" id="dPlGrid"></div>
+      <div class="sec-head" style="border-top:0;padding-top:4px"><h3>Acumulado 1988/89 – 2026/27</h3></div>
+      <div class="grid g3 plist" id="dCarGrid"></div>
+    </section>
+    <section>
+      <div class="sec-head"><span class="tag">Histórico</span><h2>Tarjetas a lo largo del tiempo</h2></div>
+      <div class="grid g2" id="dTrend"></div>
+      <div class="grid g2">
+        <div class="panel"><div class="panel-head"><h3 id="hrProvTitle">Récord de rojas provocadas</h3><span class="note">en una temporada, desde 2005/06</span></div><ol class="rank" id="hrProv"></ol></div>
+        <div class="panel"><div class="panel-head"><h3 id="hrRecTitle">Récord de rojas recibidas</h3><span class="note" id="hrRecNote">en una temporada</span></div><ol class="rank" id="hrRec"></ol></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Tarjetas acumuladas por club</h3><span class="note">rojas recibidas desde 1928, amarillas desde 1971, provocadas desde 2005</span></div>
+        <div class="tscroll" style="max-height:520px;overflow-y:auto"><table id="tblCards"></table></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ CHAT ============ -->
+  <div class="view" id="v-chat" role="tabpanel" hidden>
+    <div class="chat">
+      <aside class="side">
+        <button class="btn" type="button" id="newChat">+ Nueva conversación</button>
+        <ul class="convs" id="convs"></ul>
+        <p class="note" id="storeNote"></p>
+      </aside>
+      <div class="main">
+        <div class="main-head"><h3 id="chatTitle">Nueva conversación</h3><span class="note">Claude consulta la base de datos del panel</span></div>
+        <div class="thread" id="thread"></div>
+        <form class="composer" id="askForm">
+          <label for="askInput" hidden>Tu pregunta</label>
+          <textarea id="askInput" rows="2" placeholder="Pregunta lo que quieras sobre LaLiga…"></textarea>
+          <div style="display:flex;gap:8px;align-items:stretch">
+            <button class="btn" type="submit" id="askBtn">Preguntar</button>
+            <button class="btn ghost" type="button" id="stopBtn" hidden>Parar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Fuentes: resultados 1928/29–2024/25 de engsoccerdata (archivo público de resultados de la liga española); resultados y estadísticas por partido (tiros, faltas, córners, tarjetas recibidas y provocadas) de football-data.co.uk desde 2005/06; tarjetas por equipo, máximos goleadores, amonestados y porteros 1928/29–2013/14 de BDFútbol; jugadores y porteros desde 1988/89 de FBref; xG de Understat desde 2014/15. Temporada en curso: resultados hasta el <span id="updFoot">20/09/2026</span> (se actualiza cada martes); jugadores hasta el 20/09/2026. No hubo liga entre 1936 y 1939.</p>
+    <p>Hasta 1994/95 la victoria valía 2 puntos: cada temporada usa los puntos de su época y los totales históricos se recalculan a 3 por victoria. En 1986/87 hubo una segunda fase; aquí se suman todos los partidos. «Jornada» = número de partidos jugados por el equipo. El máximo goleador es el de la fuente (puede diferir del Pichichi oficial de Marca en algún año). De cada temporada se guardan los jugadores destacados, no la plantilla completa.</p>
+  </footer>
+</div>
+<div id="tip" role="tooltip"></div>

@@ -1,0 +1,15 @@
+{
+  "name": "laliga-en-datos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Panel de estadísticas de la Primera División desde 1928",
+  "scripts": {
+    "build": "python3 scripts/build.py",
+    "update": "python3 scripts/update.py --descargar && python3 scripts/build.py",
+    "check": "node scripts/check.js dist/index.html && node scripts/check.js dist/artefacto_con_chat.html",
+    "serve": "python3 -m http.server 8000 --directory dist"
+  },
+  "devDependencies": {
+    "playwright": "^1.47.0"
+  }
+}
